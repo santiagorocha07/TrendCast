@@ -37,14 +37,17 @@ def search_stocks(query):
     stocks = []
     for quote in result.quotes:
         if (not isinstance(quote, dict) or quote.get("quoteType") != "EQUITY"
+                or not isinstance(quote.get("exchange"), str)
                 or quote.get("exchange") not in {"NMS", "NGM", "NCM", "NYQ", "ASE", "PCX"}):
             continue
         try:
             ticker = validate_ticker(quote.get("symbol", ""))
         except (ValueError, AttributeError):
             continue
-        stocks.append({"ticker": ticker, "name": quote.get("shortname") or quote.get("longname") or ticker,
-                       "exchange": quote.get("exchDisp") or quote.get("exchange")})
+        name = quote.get("shortname") or quote.get("longname") or ticker
+        exchange = quote.get("exchDisp") or quote["exchange"]
+        stocks.append({"ticker": ticker, "name": name if isinstance(name, str) else ticker,
+                       "exchange": exchange if isinstance(exchange, str) else quote["exchange"]})
     return stocks[:8]
 
 
