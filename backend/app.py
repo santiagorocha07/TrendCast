@@ -52,6 +52,17 @@ def create_app(config=None):
             raise ModelUnavailable(f"Model metadata does not match {ticker}. Retrain its models.")
         return info
 
+    def available_models(ticker, info):
+        names = [name for name, file in MODEL_FILES.items()
+                 if (MODELS / ticker / file).exists() and name in info["models"]]
+        if not names:
+            raise ModelUnavailable(f"No usable models for {ticker}. Run python -m ml.train_model {ticker} and python -m ml.train_lstm {ticker}.")
+        return names
+
+    def best_model(ticker, info):
+        # Stable file order breaks equal-accuracy ties.
+        return max(available_models(ticker, info), key=lambda name: info["models"][name]["accuracy"])
+
     def prices(ticker):
         source = request.args.get("source", "live")
         if source not in ("live", "demo"):
@@ -110,10 +121,8 @@ def create_app(config=None):
     def model_metrics():
         ticker = validate_ticker(request.args.get("ticker", "AAPL"))
         info = metrics(ticker)
-        info["available_models"] = [name for name, file in MODEL_FILES.items()
-                                    if (MODELS / ticker / file).exists() and name in info["models"]]
-        if not info["available_models"]:
-            raise ModelUnavailable(f"No usable models for {ticker}. Run python -m ml.train_model {ticker} and python -m ml.train_lstm {ticker}.")
+        info["available_models"] = available_models(ticker, info)
+        info["recommended_model"] = best_model(ticker, info)
         return jsonify(info)
 
     @app.get("/api/stocks")
@@ -131,11 +140,14 @@ def create_app(config=None):
     def predict(ticker):
         ticker = validate_ticker(ticker)
         length = period()
-        name = request.args.get("model", "random_forest")
+        info = metrics(ticker)
+        name = request.args.get("model")
+        automatic = name is None
+        if automatic:
+            name = best_model(ticker, info)
         if name not in MODEL_FILES:
             raise ValueError("Choose random_forest, logistic_regression or lstm.")
         path = MODELS / ticker / MODEL_FILES[name]
-        info = metrics(ticker)
         if not path.exists() or name not in info["models"]:
             raise ModelUnavailable(f"{name} is not trained for {ticker}. Run python -m ml.train_model {ticker} and python -m ml.train_lstm {ticker}.")
         frame, source, warning = prices(ticker)
@@ -154,7 +166,8 @@ def create_app(config=None):
                 models[key] = joblib.load(path)
             model = models[key]
             probability = float(model.predict_proba(complete[FEATURES].tail(1))[0, list(model.classes_).index(1)])
-        payload = {"ticker": ticker, "model": name, "version": hashlib.sha256(path.read_bytes()).hexdigest()[:12],
+        payload = {"ticker": ticker, "model": name,
+            "model_selection": "highest_holdout_accuracy" if automatic else "requested", "version": hashlib.sha256(path.read_bytes()).hexdigest()[:12],
             "as_of": str(complete.index[-1].date()), "horizon": "next trading session",
             "direction": "up" if probability >= 0.5 else "down_or_flat", "probability_up": probability,
             "close": float(complete.Close.iloc[-1]), "daily_return": float(complete.Daily_Return.iloc[-1]),

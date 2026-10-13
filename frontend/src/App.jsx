@@ -112,7 +112,8 @@ function Score({ result, busy }) {
             </div>
           </dl>
           <p className="muted small">
-            Uncalibrated model score. This is not a measured chance of profit.
+            Selected by historical holdout accuracy. This uncalibrated score is
+            not a measured chance of profit.
           </p>
         </>
       ) : (
@@ -131,7 +132,6 @@ function Score({ result, busy }) {
 
 export default function App() {
   const [ticker, setTicker] = useState("");
-  const [model, setModel] = useState("random_forest");
   const [period, setPeriod] = useState("6mo");
   const [source, setSource] = useState("live");
   const [result, setResult] = useState(null);
@@ -194,14 +194,8 @@ export default function App() {
       );
       if (id !== requestId.current) return;
       setMetrics(info);
-      if (!info.available_models.includes(model)) {
-        setModel(info.available_models[0] || "random_forest");
-        throw new Error(
-          `${modelNames[model]} is not trained for ${info.training_ticker}. Choose an available model.`,
-        );
-      }
       const data = await api(
-        `/predict/${encodeURIComponent(selectedTicker.trim())}?${new URLSearchParams({ model, period, source })}`,
+        `/predict/${encodeURIComponent(selectedTicker.trim())}?${new URLSearchParams({ period, source })}`,
       );
       if (id !== requestId.current) return;
       setResult(data);
@@ -244,7 +238,6 @@ export default function App() {
   }, [tab, result, preview, metrics]);
 
   const up = result?.direction === "up";
-  const available = metrics?.available_models || ["random_forest"];
   const modelRows = metrics
     ? Object.entries(metrics.models).sort(
         ([a], [b]) => (a === "baseline") - (b === "baseline"),
@@ -307,19 +300,6 @@ export default function App() {
                   maxLength={15}
                   required
                 />
-              </label>
-              <label>
-                Model
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                >
-                  {available.map((item) => (
-                    <option value={item} key={item}>
-                      {modelNames[item]}
-                    </option>
-                  ))}
-                </select>
               </label>
               <label>
                 Range

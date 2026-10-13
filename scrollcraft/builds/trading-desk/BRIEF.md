@@ -64,3 +64,5 @@ Verified against the production Flask build at http://127.0.0.1:5003:
 - Earlier favicon 404 findings were resolved by bundling the icon under the existing /assets route. Final verified-* runs supersede the earlier screenshots; local evidence and tests stay outside Git.
 
 Limits: phone sizes are browser simulations, not physical-device checks. The Vite build retains its large-chunk warning (about 193 kB compressed JavaScript). Model quality is unchanged; this work improves the analysis interface. No deployment or merge.
+
+Follow-up: removed the model menu. The API now picks the available ticker-specific model with the highest holdout accuracy and records how it was selected. The panel still names that model. Local checks covered all four automatic selections, missing model files, equal scores, baseline exclusion and the simplified responsive form.

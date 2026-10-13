@@ -103,10 +103,12 @@ None of these models beats the baseline on this holdout. The LSTM adds a useful 
 | GET | `/api/favorites` | This browser session's watchlist |
 | PUT / DELETE | `/api/favorites/AAPL` | Add / remove a ticker |
 
-Prediction parameters: `model=random_forest|logistic_regression|lstm`, `period=3mo|6mo|1y|2y|5y`, `source=live|demo`.
+Predictions automatically use the available model with the highest chronological holdout accuracy for that ticker. Equal scores use a stable order (Random Forest, Logistic Regression, LSTM). This is a historical comparison, not a guarantee of future performance.
+
+Prediction parameters: optional `model=random_forest|logistic_regression|lstm` for direct API comparisons, `period=3mo|6mo|1y|2y|5y`, `source=live|demo`.
 
 ```bash
-curl 'http://127.0.0.1:5001/api/predict/AAPL?source=demo&model=random_forest'
+curl 'http://127.0.0.1:5001/api/predict/AAPL?source=demo'
 curl 'http://127.0.0.1:5001/api/stocks?query=Microsoft'
 curl 'http://127.0.0.1:5001/api/history/MSFT?period=6mo'
 ```
