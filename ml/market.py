@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / "data"
+MODELS = ROOT / "models"
 FEATURES = ["Close_SMA20_ratio", "Close_SMA50_ratio", "SMA20_SMA50_ratio", "Daily_Return"]
 
 
@@ -19,6 +21,34 @@ def validate_ticker(ticker):
     if not re.fullmatch(r"[A-Z][A-Z0-9.^=-]{0,14}", ticker):
         raise ValueError("Use a valid ticker, for example AAPL, MSFT or BRK-B.")
     return ticker
+
+
+def search_stocks(query):
+    query = query.strip()
+    if not 1 <= len(query) <= 80 or not query.isprintable():
+        raise ValueError("Search with a ticker or company name between 1 and 80 characters.")
+    try:
+        result = yf.Search(query, max_results=8, news_count=0, lists_count=0,
+                           recommended=0, include_cb=False, timeout=10)
+        if not isinstance(result.response, dict) or not isinstance(result.response.get("quotes"), list):
+            raise ValueError("Invalid Yahoo Finance search response.")
+    except Exception as exc:
+        raise MarketDataError("Yahoo Finance search is unavailable. Please try again later.") from exc
+    stocks = []
+    for quote in result.quotes:
+        if (not isinstance(quote, dict) or quote.get("quoteType") != "EQUITY"
+                or not isinstance(quote.get("exchange"), str)
+                or quote.get("exchange") not in {"NMS", "NGM", "NCM", "NYQ", "ASE", "PCX"}):
+            continue
+        try:
+            ticker = validate_ticker(quote.get("symbol", ""))
+        except (ValueError, AttributeError):
+            continue
+        name = quote.get("shortname") or quote.get("longname") or ticker
+        exchange = quote.get("exchDisp") or quote["exchange"]
+        stocks.append({"ticker": ticker, "name": name if isinstance(name, str) else ticker,
+                       "exchange": exchange if isinstance(exchange, str) else quote["exchange"]})
+    return stocks[:8]
 
 
 def prepare_data(frame):
@@ -55,7 +85,7 @@ def download_data(ticker, period="5y"):
 
 
 def load_training_data():
-    return prepare_data(pd.read_csv(ROOT / "appl_processado.csv", index_col="Date", parse_dates=True))
+    return prepare_data(pd.read_csv(DATA / "appl_processado.csv", index_col="Date", parse_dates=True))
 
 
 def labelled_data(frame):

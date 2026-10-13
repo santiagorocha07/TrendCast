@@ -10,8 +10,8 @@ import joblib
 import psycopg
 from flask import Flask, jsonify, request, session, send_from_directory
 
-from database import Storage
-from market import ROOT, FEATURES, MarketDataError, download_data, history_frame, history_records, load_training_data, validate_ticker
+from .database import Storage
+from ml.market import ROOT, MODELS, FEATURES, MarketDataError, download_data, history_frame, history_records, load_training_data, search_stocks, validate_ticker
 
 MODEL_FILES = {"random_forest": "modelo_trendcast.pkl", "logistic_regression": "modelo_logistic.pkl", "lstm": "modelo_lstm.pt"}
 PERIODS = {"3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "5y": 1260}
@@ -37,7 +37,7 @@ def create_app(config=None):
         return session["owner"]
 
     def metrics():
-        return json.loads((ROOT / "metricas_modelo.json").read_text())
+        return json.loads((MODELS / "metricas_modelo.json").read_text())
 
     def prices(ticker):
         source = request.args.get("source", "live")
@@ -93,8 +93,12 @@ def create_app(config=None):
     def model_metrics():
         info = metrics()
         info["available_models"] = [name for name, file in MODEL_FILES.items()
-                                    if (ROOT / file).exists() and name in info["models"]]
+                                    if (MODELS / file).exists() and name in info["models"]]
         return jsonify(info)
+
+    @app.get("/api/stocks")
+    def stocks():
+        return jsonify(stocks=search_stocks(request.args.get("query", "")), source="yahoo_finance")
 
     @app.get("/api/history/<ticker>")
     def history(ticker):
@@ -110,7 +114,7 @@ def create_app(config=None):
         name = request.args.get("model", "random_forest")
         if name not in MODEL_FILES:
             raise ValueError("Choose random_forest, logistic_regression or lstm.")
-        path = ROOT / MODEL_FILES[name]
+        path = MODELS / MODEL_FILES[name]
         info = metrics()
         if not path.exists() or name not in info["models"]:
             return jsonify(error="Model not trained. Run the corresponding training script."), 503
@@ -120,7 +124,7 @@ def create_app(config=None):
             raise MarketDataError("At least 50 daily sessions are needed for the indicators.")
         if name == "lstm":
             try:
-                from lstm_model import predict_lstm
+                from ml.lstm_model import predict_lstm
             except ImportError:
                 return jsonify(error="Install requirements-lstm.txt to use the LSTM."), 503
             probability = predict_lstm(complete, path)
