@@ -1,0 +1,199 @@
+{
+  "training_ticker": "AAPL",
+  "features": [
+    "Close_SMA20_ratio",
+    "Close_SMA50_ratio",
+    "SMA20_SMA50_ratio",
+    "Daily_Return"
+  ],
+  "sklearn_version": "1.9.1",
+  "horizon": "next trading session",
+  "train": {
+    "start": "2021-11-18",
+    "end": "2025-09-19",
+    "rows": 962
+  },
+  "test": {
+    "start": "2025-09-23",
+    "end": "2026-09-08",
+    "rows": 241
+  },
+  "gap_sessions": 1,
+  "best_params": {
+    "max_depth": 3,
+    "min_samples_leaf": 20
+  },
+  "cv_accuracy": 0.54,
+  "models": {
+    "random_forest": {
+      "accuracy": 0.5228215767634855,
+      "confusion_matrix": [
+        [
+          39,
+          74
+        ],
+        [
+          41,
+          87
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.4875,
+          "recall": 0.34513274336283184,
+          "f1-score": 0.40414507772020725,
+          "support": 113.0
+        },
+        "up": {
+          "precision": 0.5403726708074534,
+          "recall": 0.6796875,
+          "f1-score": 0.6020761245674741,
+          "support": 128.0
+        },
+        "accuracy": 0.5228215767634855,
+        "macro avg": {
+          "precision": 0.5139363354037267,
+          "recall": 0.5124101216814159,
+          "f1-score": 0.5031106011438407,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.5155817504703487,
+          "recall": 0.5228215767634855,
+          "f1-score": 0.5092702810249796,
+          "support": 241.0
+        }
+      }
+    },
+    "logistic_regression": {
+      "accuracy": 0.5311203319502075,
+      "confusion_matrix": [
+        [
+          19,
+          94
+        ],
+        [
+          19,
+          109
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.5,
+          "recall": 0.168141592920354,
+          "f1-score": 0.25165562913907286,
+          "support": 113.0
+        },
+        "up": {
+          "precision": 0.5369458128078818,
+          "recall": 0.8515625,
+          "f1-score": 0.6586102719033232,
+          "support": 128.0
+        },
+        "accuracy": 0.5311203319502075,
+        "macro avg": {
+          "precision": 0.5184729064039408,
+          "recall": 0.509852046460177,
+          "f1-score": 0.45513295052119807,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.5196226723626924,
+          "recall": 0.5311203319502075,
+          "f1-score": 0.4677975140926996,
+          "support": 241.0
+        }
+      }
+    },
+    "baseline": {
+      "accuracy": 0.5311203319502075,
+      "confusion_matrix": [
+        [
+          0,
+          113
+        ],
+        [
+          0,
+          128
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 113.0
+        },
+        "up": {
+          "precision": 0.5311203319502075,
+          "recall": 1.0,
+          "f1-score": 0.6937669376693767,
+          "support": 128.0
+        },
+        "accuracy": 0.5311203319502075,
+        "macro avg": {
+          "precision": 0.26556016597510373,
+          "recall": 0.5,
+          "f1-score": 0.34688346883468835,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.28208880701089856,
+          "recall": 0.5311203319502075,
+          "f1-score": 0.36847372623103825,
+          "support": 241.0
+        }
+      }
+    },
+    "lstm": {
+      "accuracy": 0.48132780082987553,
+      "confusion_matrix": [
+        [
+          51,
+          62
+        ],
+        [
+          63,
+          65
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.4473684210526316,
+          "recall": 0.45132743362831856,
+          "f1-score": 0.44933920704845814,
+          "support": 113.0
+        },
+        "up": {
+          "precision": 0.5118110236220472,
+          "recall": 0.5078125,
+          "f1-score": 0.5098039215686274,
+          "support": 128.0
+        },
+        "accuracy": 0.48132780082987553,
+        "macro avg": {
+          "precision": 0.47958972233733943,
+          "recall": 0.4795699668141593,
+          "f1-score": 0.47957156430854275,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.4815951975210349,
+          "recall": 0.48132780082987553,
+          "f1-score": 0.481453246295685,
+          "support": 241.0
+        }
+      }
+    }
+  },
+  "baseline_class": 1,
+  "production_training_end": "2026-09-08",
+  "production_data_end": "2026-09-09",
+  "interpretation": "Historical holdout accuracy is not a guarantee of future performance. Model probabilities are not calibrated.",
+  "lstm": {
+    "window": 20,
+    "hidden_units": 16,
+    "epochs": 30,
+    "note": "Fixed architecture; no hyperparameter selection on the test set."
+  }
+}

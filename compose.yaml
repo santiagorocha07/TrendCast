@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: trendcast
+      POSTGRES_USER: trendcast
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trendcast_local}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trendcast -d trendcast"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:5001:5001"
+    environment:
+      DATABASE_URL: postgresql://trendcast:${POSTGRES_PASSWORD:-trendcast_local}@db:5432/trendcast
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env (see .env.example)}
+      PORT: "5001"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
