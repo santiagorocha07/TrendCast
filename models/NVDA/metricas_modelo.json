@@ -1,0 +1,200 @@
+{
+  "training_ticker": "NVDA",
+  "dataset_sha256": "0f7fe96fb6e6e60ecf2e376831985dd78a56e7c75c9b158e31d2fa09b414efc4",
+  "features": [
+    "Close_SMA20_ratio",
+    "Close_SMA50_ratio",
+    "SMA20_SMA50_ratio",
+    "Daily_Return"
+  ],
+  "sklearn_version": "1.9.1",
+  "horizon": "next trading session",
+  "train": {
+    "start": "2021-12-23",
+    "end": "2025-10-22",
+    "rows": 961
+  },
+  "test": {
+    "start": "2025-10-24",
+    "end": "2026-10-09",
+    "rows": 241
+  },
+  "gap_sessions": 1,
+  "best_params": {
+    "max_depth": 3,
+    "min_samples_leaf": 10
+  },
+  "cv_accuracy": 0.49750000000000005,
+  "models": {
+    "random_forest": {
+      "accuracy": 0.49377593360995853,
+      "confusion_matrix": [
+        [
+          9,
+          109
+        ],
+        [
+          13,
+          110
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.4090909090909091,
+          "recall": 0.07627118644067797,
+          "f1-score": 0.12857142857142856,
+          "support": 118.0
+        },
+        "up": {
+          "precision": 0.502283105022831,
+          "recall": 0.8943089430894309,
+          "f1-score": 0.6432748538011696,
+          "support": 123.0
+        },
+        "accuracy": 0.49377593360995853,
+        "macro avg": {
+          "precision": 0.45568700705687004,
+          "recall": 0.48529006476505443,
+          "f1-score": 0.38592314118629906,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.4566537310810601,
+          "recall": 0.49377593360995853,
+          "f1-score": 0.3912623883359851,
+          "support": 241.0
+        }
+      }
+    },
+    "logistic_regression": {
+      "accuracy": 0.5103734439834025,
+      "confusion_matrix": [
+        [
+          0,
+          118
+        ],
+        [
+          0,
+          123
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 118.0
+        },
+        "up": {
+          "precision": 0.5103734439834025,
+          "recall": 1.0,
+          "f1-score": 0.6758241758241759,
+          "support": 123.0
+        },
+        "accuracy": 0.5103734439834025,
+        "macro avg": {
+          "precision": 0.2551867219917012,
+          "recall": 0.5,
+          "f1-score": 0.33791208791208793,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.26048105232347923,
+          "recall": 0.5103734439834025,
+          "f1-score": 0.3449227121426292,
+          "support": 241.0
+        }
+      }
+    },
+    "baseline": {
+      "accuracy": 0.5103734439834025,
+      "confusion_matrix": [
+        [
+          0,
+          118
+        ],
+        [
+          0,
+          123
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 118.0
+        },
+        "up": {
+          "precision": 0.5103734439834025,
+          "recall": 1.0,
+          "f1-score": 0.6758241758241759,
+          "support": 123.0
+        },
+        "accuracy": 0.5103734439834025,
+        "macro avg": {
+          "precision": 0.2551867219917012,
+          "recall": 0.5,
+          "f1-score": 0.33791208791208793,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.26048105232347923,
+          "recall": 0.5103734439834025,
+          "f1-score": 0.3449227121426292,
+          "support": 241.0
+        }
+      }
+    },
+    "lstm": {
+      "accuracy": 0.5020746887966805,
+      "confusion_matrix": [
+        [
+          29,
+          89
+        ],
+        [
+          31,
+          92
+        ]
+      ],
+      "classification_report": {
+        "down_or_flat": {
+          "precision": 0.48333333333333334,
+          "recall": 0.2457627118644068,
+          "f1-score": 0.3258426966292135,
+          "support": 118.0
+        },
+        "up": {
+          "precision": 0.5082872928176796,
+          "recall": 0.7479674796747967,
+          "f1-score": 0.6052631578947368,
+          "support": 123.0
+        },
+        "accuracy": 0.5020746887966805,
+        "macro avg": {
+          "precision": 0.4958103130755065,
+          "recall": 0.49686509576960175,
+          "f1-score": 0.46555292726197517,
+          "support": 241.0
+        },
+        "weighted avg": {
+          "precision": 0.49606917157638136,
+          "recall": 0.5020746887966805,
+          "f1-score": 0.46845147976472956,
+          "support": 241.0
+        }
+      }
+    }
+  },
+  "baseline_class": 1,
+  "production_training_end": "2026-10-09",
+  "production_data_end": "2026-10-12",
+  "interpretation": "Historical holdout accuracy is not a guarantee of future performance. Model probabilities are not calibrated.",
+  "lstm": {
+    "window": 20,
+    "hidden_units": 16,
+    "epochs": 30,
+    "note": "Fixed architecture; no hyperparameter selection on the test set."
+  }
+}

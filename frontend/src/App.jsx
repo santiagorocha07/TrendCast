@@ -29,7 +29,7 @@ const date = (value) =>
   });
 
 export default function App() {
-  const [ticker, setTicker] = useState("AAPL");
+  const [ticker, setTicker] = useState("");
   const [model, setModel] = useState("random_forest");
   const [period, setPeriod] = useState("6mo");
   const [source, setSource] = useState("live");
@@ -79,6 +79,17 @@ export default function App() {
     setError("");
     setResult(null);
     try {
+      const info = await api(
+        `/models?${new URLSearchParams({ ticker: selectedTicker.trim() })}`,
+      );
+      if (id !== requestId.current) return;
+      setMetrics(info);
+      if (!info.available_models.includes(model)) {
+        setModel(info.available_models[0] || "random_forest");
+        throw new Error(
+          `${modelNames[model]} is not trained for ${info.training_ticker}. Choose an available model.`,
+        );
+      }
       const data = await api(
         `/predict/${encodeURIComponent(selectedTicker.trim())}?${new URLSearchParams({ model, period, source })}`,
       );
@@ -128,12 +139,6 @@ export default function App() {
           <span className="brand-mark">↗</span>TrendCast
           <span className="brand-dot">.</span>
         </a>
-        <div className="workspace">
-          <span className="workspace-icon">TC</span>
-          <div>
-            Market workspace<small>Personal research project</small>
-          </div>
-        </div>
         <p className="nav-label">WORKSPACE</p>
         <nav aria-label="Workspace">
           {[
@@ -180,10 +185,6 @@ export default function App() {
             </p>
           )}
         </div>
-        <div className="sidebar-bottom">
-          <span className="status-dot" /> Built to explore, not to trade.
-          <p>Python · React · PostgreSQL</p>
-        </div>
       </aside>
       <main>
         <header className="topbar">
@@ -195,10 +196,7 @@ export default function App() {
                 ? "Forecasts"
                 : "Overview"}
           </span>
-          <div className="research-badge">
-            <span className="status-dot" /> Research edition{" "}
-            <span className="avatar">S</span>
-          </div>
+          <span className="avatar">S</span>
         </header>
         <div className="content">
           <div className="page-heading">
@@ -297,9 +295,6 @@ export default function App() {
                     {item}
                   </button>
                 ))}
-                <span className="data-note">
-                  Daily adjusted closes · next-session horizon
-                </span>
               </div>
               {error && (
                 <div className="error" role="alert">
@@ -344,7 +339,7 @@ export default function App() {
                       <div className="notice">
                         {result.warning}{" "}
                         {result.experimental_ticker &&
-                          "This model was trained on AAPL. Results for other tickers are experimental."}{" "}
+                          `This model was trained on ${result.training_ticker}. Results for other tickers are experimental.`}{" "}
                         {result.historical_replay &&
                           "Historical replay: this date is included in production training; this forecast is not an out-of-sample result."}
                       </div>
@@ -397,7 +392,7 @@ export default function App() {
                         </h2>
                         <span>
                           Baseline: {percent(result.baseline_accuracy)}{" "}
-                          <small>· AAPL only</small>
+                          <small>· {result.training_ticker}</small>
                         </span>
                       </div>
                     </section>
@@ -530,7 +525,8 @@ export default function App() {
                             : "No edge over the baseline."}
                         </h3>
                         <p>
-                          Evaluated on {result.test_period.rows} unseen AAPL
+                          Evaluated on {result.test_period.rows} unseen{" "}
+                          {result.training_ticker}{" "}
                           sessions, {date(result.test_period.start)} to{" "}
                           {date(result.test_period.end)}. A more complex model
                           is not automatically a better forecast.
@@ -582,7 +578,9 @@ export default function App() {
                     comes afterwards.
                   </p>
                 </div>
-                <span className="ticker-tag">AAPL</span>
+                <span className="ticker-tag">
+                  {metrics?.training_ticker || "—"}
+                </span>
               </div>
               <div className="table-scroll">
                 <table>

@@ -11,6 +11,6 @@ COPY requirements.txt requirements-lstm.txt ./
 RUN pip install --no-cache-dir -r requirements-lstm.txt
 COPY . .
 COPY --from=frontend /frontend/dist ./frontend/dist
-RUN python -m ml.train_model && python -m ml.train_lstm
+RUN for dataset in data/*.csv; do ticker=$(basename "$dataset" .csv); python -m ml.train_model "$ticker" && python -m ml.train_lstm "$ticker" || exit 1; done
 ENV PORT=5001
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 4 --timeout 90 backend.app:app"]

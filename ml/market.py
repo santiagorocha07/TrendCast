@@ -84,8 +84,12 @@ def download_data(ticker, period="5y"):
     return frame
 
 
-def load_training_data():
-    return prepare_data(pd.read_csv(DATA / "appl_processado.csv", index_col="Date", parse_dates=True))
+def load_training_data(ticker="AAPL"):
+    ticker = validate_ticker(ticker)
+    path = DATA / f"{ticker}.csv"
+    if not path.exists():
+        raise ValueError(f"No saved data for {ticker}. Run: python -m ml.fetch_data {ticker}")
+    return prepare_data(pd.read_csv(path, index_col="Date", parse_dates=True))
 
 
 def labelled_data(frame):

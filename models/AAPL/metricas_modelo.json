@@ -1,5 +1,6 @@
 {
   "training_ticker": "AAPL",
+  "dataset_sha256": "1b19b4868eae3b1799370e89932d84f3617b0d8ccab55b1149d0744a2dffaf9f",
   "features": [
     "Close_SMA20_ratio",
     "Close_SMA50_ratio",
