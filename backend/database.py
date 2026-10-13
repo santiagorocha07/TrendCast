@@ -31,12 +31,14 @@ class Storage:
                 (ticker, Jsonb(records)))
 
     def save_prediction(self, owner, payload):
+        # Cached Yahoo prices identify the same forecast; keep provenance in the payload.
+        source = "yahoo_finance" if payload["source"] in ("cache", "stale_cache") else payload["source"]
         with self.connect() as conn:
             conn.execute("INSERT INTO predictions(owner, ticker, as_of, model, version, source, payload) "
                 "VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(owner,ticker,as_of,model,version,source) "
                 "DO UPDATE SET payload=excluded.payload",
                 (owner, payload["ticker"], payload["as_of"], payload["model"], payload["version"],
-                 payload["source"], Jsonb(payload)))
+                 source, Jsonb(payload)))
 
     def predictions(self, owner):
         with self.connect() as conn:
