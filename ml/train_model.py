@@ -1,4 +1,6 @@
 """Avaliar num teste cronológico intocado; só depois treinar para a API."""
+import argparse
+import hashlib
 import json
 
 import joblib
@@ -11,7 +13,7 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from .market import MODELS, FEATURES, load_training_data, labelled_data, chronological_split
+from .market import DATA, MODELS, validate_ticker, FEATURES, load_training_data, labelled_data, chronological_split
 
 
 def evaluate(y, prediction):
@@ -21,8 +23,10 @@ def evaluate(y, prediction):
                 target_names=["down_or_flat", "up"], output_dict=True, zero_division=0)}
 
 
-def train():
-    prices = load_training_data()
+def train(ticker="AAPL"):
+    ticker = validate_ticker(ticker)
+    prices = load_training_data(ticker)
+    directory = MODELS / ticker
     data = labelled_data(prices)
     train_data, test = chronological_split(data)
     X_train, y_train = train_data[FEATURES], train_data.Target
@@ -36,7 +40,7 @@ def train():
     logistic = make_pipeline(StandardScaler(), LogisticRegression(random_state=42))
     logistic.fit(X_train, y_train)
     majority = int(y_train.mode().iloc[0])
-    metrics = {"training_ticker": "AAPL", "features": FEATURES,
+    metrics = {"training_ticker": ticker, "dataset_sha256": hashlib.sha256((DATA / f"{ticker}.csv").read_bytes()).hexdigest(), "features": FEATURES,
         "sklearn_version": sklearn.__version__, "horizon": "next trading session",
         "train": {"start": str(train_data.index.min().date()), "end": str(train_data.index.max().date()), "rows": len(train_data)},
         "test": {"start": str(test.index.min().date()), "end": str(test.index.max().date()), "rows": len(test)},
@@ -48,14 +52,17 @@ def train():
         "production_training_end": str(data.index.max().date()),
         "production_data_end": str(prices.index.max().date()),
         "interpretation": "Historical holdout accuracy is not a guarantee of future performance. Model probabilities are not calibrated."}
+    directory.mkdir(parents=True, exist_ok=True)
     for name, model in [("random_forest", search.best_estimator_), ("logistic_regression", logistic)]:
         model.fit(data[FEATURES], data.Target)
         path = "modelo_trendcast.pkl" if name == "random_forest" else "modelo_logistic.pkl"
-        joblib.dump(model, MODELS / path)
-    (MODELS / "metricas_modelo.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        joblib.dump(model, directory / path)
+    (directory / "metricas_modelo.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     print(json.dumps(metrics, indent=2))
     return metrics
 
 
 if __name__ == "__main__":
-    train()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ticker", nargs="?", default="AAPL", type=validate_ticker)
+    train(parser.parse_args().ticker)

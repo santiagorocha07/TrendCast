@@ -55,15 +55,17 @@ You can also run both services with Docker after configuring `.env`:
 docker compose up --build
 ```
 
-### Refresh the training data
+### Train or refresh a stock
 
 ```bash
-python -m ml.fetch_data --no-plot
-python -m ml.train_model
-python -m ml.train_lstm
+python -m ml.fetch_data MSFT --no-plot
+python -m ml.train_model MSFT
+python -m ml.train_lstm MSFT
 ```
 
-`fetch_data.py` without `--no-plot` also opens a matplotlib chart. Restart Flask after retraining so it loads the new models. Updating the dataset changes the evaluation period, so don't compare those results directly with the old ones.
+`ml.fetch_data` without `--no-plot` also opens a matplotlib chart. The ticker argument defaults to AAPL; replace MSFT with another valid ticker to train that stock. Data is saved as `data/MSFT.csv`, while its three models and metrics are saved in `models/MSFT/`. Training the LSTM requires the same dataset used for its scikit-learn comparison; if the CSV changes, run `ml.train_model` again first.
+
+The included snapshots and models cover AAPL, MSFT, GOOGL and NVDA. Training happens through these commands, never inside a prediction request. An untrained ticker returns HTTP 503 with the commands to train it; it never falls back to another stock's model. Restart Flask after retraining so it loads the new models. Updating the dataset changes the evaluation period, so don't compare those results directly with the old ones.
 
 ## How the evaluation works
 
@@ -75,7 +77,7 @@ The baseline always predicts the most common class **in training**, not the most
 
 After evaluation, the production models are refitted on all labelled data. Their holdout metrics still describe the separate evaluation models. Forecasts made on dates already included in production training are labelled as historical replay.
 
-### Results on the included dataset
+### AAPL results on the included dataset
 
 Test period: **23 September 2025 – 8 September 2026**, 241 sessions.
 
@@ -86,14 +88,14 @@ Test period: **23 September 2025 – 8 September 2026**, 241 sessions.
 | Random Forest | 52.3% |
 | LSTM | 48.1% |
 
-None of these models beats the baseline on this holdout. The LSTM adds a useful comparison, but it does not improve this result. The full confusion matrices, precision, recall and F1 scores are in `models/metricas_modelo.json` and in the dashboard.
+None of these models beats the baseline on this holdout. The LSTM adds a useful comparison, but it does not improve this result. The full confusion matrices, precision, recall and F1 scores are in `models/AAPL/metricas_modelo.json` and in the dashboard.
 
 ## API
 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Check Flask and PostgreSQL |
-| GET | `/api/models` | Metrics and available models |
+| GET | `/api/models?ticker=MSFT` | That stock's metrics and available models (defaults to AAPL) |
 | GET | `/api/stocks?query=Microsoft` | Find US stock symbols by ticker or company name |
 | GET | `/api/predict/AAPL` | Forecast plus chart history; save the forecast |
 | GET | `/api/history/AAPL` | Adjusted prices and moving averages |
@@ -111,7 +113,7 @@ curl 'http://127.0.0.1:5001/api/history/MSFT?period=6mo'
 
 Stock search uses the existing yfinance connection to Yahoo Finance and returns up to eight equity matches listed on Nasdaq or NYSE venues, with their ticker, name and exchange. ETFs, futures and overseas listings are excluded. Queries must contain 1–80 printable characters after trimming. No matches returns an empty list; an unavailable provider returns HTTP 502. Each search request uses a 10-second provider timeout. There is no extra API key to configure.
 
-Demo data is available only for AAPL. Other tickers use models trained on AAPL and are marked experimental. This project is intended for US stocks quoted in USD.
+Demo data is available only for AAPL. Each ticker uses its own trained models, scaling, holdout metrics and baseline. The dashboard loads the selected stock's evaluation before forecasting. This project is intended for US stocks quoted in USD.
 
 ## Validation
 
@@ -127,7 +129,7 @@ npm run build
 
 ## Deployment (later)
 
-The Dockerfile builds React, trains the models on the included CSV and runs Flask with Gunicorn. React and the API share one origin, so there is no separate CORS setup.
+The Dockerfile builds React, trains each ticker's models on its included CSV and runs Flask with Gunicorn. React and the API share one origin, so there is no separate CORS setup.
 
 Hosting is deliberately pending while the project is reviewed. Vercel is the intended platform; its deployment configuration has not been added yet. The local implementation keeps the original React, Flask and PostgreSQL stack.
 
@@ -142,12 +144,12 @@ backend/            Flask API and PostgreSQL
   schema.sql          Tables and indexes
 ml/                 Data preparation and machine learning
   market.py           Shared indicators, labels and time split
-  fetch_data.py       Download and visualize AAPL prices
+  fetch_data.py       Download and visualize one ticker
   train_model.py      Evaluate and save scikit-learn models
   train_lstm.py       Evaluate and save the LSTM
   lstm_model.py       LSTM architecture and inference
-data/               Included AAPL training CSV
-models/             Trained models and evaluation metrics
+data/               Separate training CSV per ticker
+models/<ticker>/    That stock's models and evaluation metrics
 frontend/           React + Vite + Recharts
 tests/              Local checks (ignored by Git)
 .github/workflows/  Frontend build
@@ -170,6 +172,6 @@ Run the Python commands from the project root using `python -m`, as shown above.
 
 This is a learning project, not investment advice. The model scores are uncalibrated probabilities. A historical accuracy figure says nothing on its own about trading profit: fees, slippage, risk and transaction timing are not modelled.
 
-The training set contains one stock and roughly five years of daily data. There is no claim that a model trained on AAPL works on another stock. Yahoo Finance can be rate-limited, and adjusted historical prices can change after corporate actions. The included CSV is a fixed snapshot, not today's market.
+Each model is trained and evaluated on roughly five years of daily data for its own stock. Training on the correct stock does not guarantee that a model beats its baseline or generalizes to future market conditions. Yahoo Finance can be rate-limited, and adjusted historical prices can change after corporate actions. The included CSV is a fixed snapshot, not today's market.
 
 Anonymous sessions are deliberately simple: there are no accounts, and clearing browser cookies loses access to that session's watchlist. Keep `SECRET_KEY` stable across restarts. Database records remain until you delete them yourself. Account login, backtesting and scheduled retraining are outside the current scope.

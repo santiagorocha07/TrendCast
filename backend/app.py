@@ -14,6 +14,12 @@ from .database import Storage
 from ml.market import ROOT, MODELS, FEATURES, MarketDataError, download_data, history_frame, history_records, load_training_data, search_stocks, validate_ticker
 
 MODEL_FILES = {"random_forest": "modelo_trendcast.pkl", "logistic_regression": "modelo_logistic.pkl", "lstm": "modelo_lstm.pt"}
+
+
+class ModelUnavailable(ValueError):
+    pass
+
+
 PERIODS = {"3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "5y": 1260}
 
 
@@ -36,8 +42,15 @@ def create_app(config=None):
             session["owner"] = str(uuid.uuid4())
         return session["owner"]
 
-    def metrics():
-        return json.loads((MODELS / "metricas_modelo.json").read_text())
+    def metrics(ticker):
+        path = MODELS / ticker / "metricas_modelo.json"
+        try:
+            info = json.loads(path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise ModelUnavailable(f"No trained models for {ticker}. Run: python -m ml.fetch_data {ticker} --no-plot; python -m ml.train_model {ticker}; python -m ml.train_lstm {ticker}") from exc
+        if not isinstance(info, dict) or info.get("training_ticker") != ticker:
+            raise ModelUnavailable(f"Model metadata does not match {ticker}. Retrain its models.")
+        return info
 
     def prices(ticker):
         source = request.args.get("source", "live")
@@ -66,6 +79,10 @@ def create_app(config=None):
             raise ValueError("Period must be 3mo, 6mo, 1y, 2y or 5y.")
         return PERIODS[selected]
 
+    @app.errorhandler(ModelUnavailable)
+    def model_unavailable(exc):
+        return jsonify(error=str(exc)), 503
+
     @app.errorhandler(ValueError)
     def invalid(exc):
         return jsonify(error=str(exc)), 400
@@ -91,9 +108,12 @@ def create_app(config=None):
 
     @app.get("/api/models")
     def model_metrics():
-        info = metrics()
+        ticker = validate_ticker(request.args.get("ticker", "AAPL"))
+        info = metrics(ticker)
         info["available_models"] = [name for name, file in MODEL_FILES.items()
-                                    if (MODELS / file).exists() and name in info["models"]]
+                                    if (MODELS / ticker / file).exists() and name in info["models"]]
+        if not info["available_models"]:
+            raise ModelUnavailable(f"No usable models for {ticker}. Run python -m ml.train_model {ticker} and python -m ml.train_lstm {ticker}.")
         return jsonify(info)
 
     @app.get("/api/stocks")
@@ -114,10 +134,10 @@ def create_app(config=None):
         name = request.args.get("model", "random_forest")
         if name not in MODEL_FILES:
             raise ValueError("Choose random_forest, logistic_regression or lstm.")
-        path = MODELS / MODEL_FILES[name]
-        info = metrics()
+        path = MODELS / ticker / MODEL_FILES[name]
+        info = metrics(ticker)
         if not path.exists() or name not in info["models"]:
-            return jsonify(error="Model not trained. Run the corresponding training script."), 503
+            raise ModelUnavailable(f"{name} is not trained for {ticker}. Run python -m ml.train_model {ticker} and python -m ml.train_lstm {ticker}.")
         frame, source, warning = prices(ticker)
         complete = frame.dropna(subset=FEATURES)
         if complete.empty:
@@ -129,17 +149,17 @@ def create_app(config=None):
                 return jsonify(error="Install requirements-lstm.txt to use the LSTM."), 503
             probability = predict_lstm(complete, path)
         else:
-            if name not in models:
-                models[name] = joblib.load(path)
-            model = models[name]
+            key = (ticker, name)
+            if key not in models:
+                models[key] = joblib.load(path)
+            model = models[key]
             probability = float(model.predict_proba(complete[FEATURES].tail(1))[0, list(model.classes_).index(1)])
-        # shortcut: modelos treinados só em AAPL, treinar por ticker antes de afirmar validação noutros ativos.
         payload = {"ticker": ticker, "model": name, "version": hashlib.sha256(path.read_bytes()).hexdigest()[:12],
             "as_of": str(complete.index[-1].date()), "horizon": "next trading session",
             "direction": "up" if probability >= 0.5 else "down_or_flat", "probability_up": probability,
             "close": float(complete.Close.iloc[-1]), "daily_return": float(complete.Daily_Return.iloc[-1]),
-            "source": source, "warning": warning, "training_ticker": "AAPL",
-            "experimental_ticker": ticker != "AAPL", "evaluation": info["models"].get(name),
+            "source": source, "warning": warning, "training_ticker": ticker,
+            "experimental_ticker": False, "evaluation": info["models"].get(name),
             "baseline_accuracy": info["models"]["baseline"]["accuracy"],
             "test_period": info["test"], "production_training_end": info["production_training_end"],
             "historical_replay": str(complete.index[-1].date()) <= info["production_data_end"],
