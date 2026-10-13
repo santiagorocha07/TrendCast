@@ -11,7 +11,7 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from market import ROOT, FEATURES, load_training_data, labelled_data, chronological_split
+from .market import MODELS, FEATURES, load_training_data, labelled_data, chronological_split
 
 
 def evaluate(y, prediction):
@@ -51,8 +51,8 @@ def train():
     for name, model in [("random_forest", search.best_estimator_), ("logistic_regression", logistic)]:
         model.fit(data[FEATURES], data.Target)
         path = "modelo_trendcast.pkl" if name == "random_forest" else "modelo_logistic.pkl"
-        joblib.dump(model, ROOT / path)
-    (ROOT / "metricas_modelo.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        joblib.dump(model, MODELS / path)
+    (MODELS / "metricas_modelo.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     print(json.dumps(metrics, indent=2))
     return metrics
 

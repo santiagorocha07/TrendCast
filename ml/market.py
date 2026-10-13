@@ -6,7 +6,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / "data"
+MODELS = ROOT / "models"
 FEATURES = ["Close_SMA20_ratio", "Close_SMA50_ratio", "SMA20_SMA50_ratio", "Daily_Return"]
 
 
@@ -55,7 +57,7 @@ def download_data(ticker, period="5y"):
 
 
 def load_training_data():
-    return prepare_data(pd.read_csv(ROOT / "appl_processado.csv", index_col="Date", parse_dates=True))
+    return prepare_data(pd.read_csv(DATA / "appl_processado.csv", index_col="Date", parse_dates=True))
 
 
 def labelled_data(frame):

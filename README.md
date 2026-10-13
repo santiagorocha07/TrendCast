@@ -33,8 +33,8 @@ docker compose up -d db
 The default development database listens on `127.0.0.1:5433`. If you already have PostgreSQL running, create a database and update `DATABASE_URL` instead.
 
 ```bash
-python train_model.py
-python train_lstm.py
+python -m ml.train_model
+python -m ml.train_lstm
 cd frontend
 npm ci
 npm run build
@@ -42,7 +42,7 @@ cd ..
 set -a
 source .env
 set +a
-python app.py
+python -m backend.app
 ```
 
 Open **http://127.0.0.1:5001**. Select **Saved AAPL demo** to explore the included dataset, or **Yahoo Finance** for live downloads. Today's candle is excluded because it may still be incomplete; the forecast uses the latest earlier session. Downloads are cached for an hour; if Yahoo is unavailable, an existing cache is shown with a warning.
@@ -58,9 +58,9 @@ docker compose up --build
 ### Refresh the training data
 
 ```bash
-python fetch_data.py --no-plot
-python train_model.py
-python train_lstm.py
+python -m ml.fetch_data --no-plot
+python -m ml.train_model
+python -m ml.train_lstm
 ```
 
 `fetch_data.py` without `--no-plot` also opens a matplotlib chart. Restart Flask after retraining so it loads the new models. Updating the dataset changes the evaluation period, so don't compare those results directly with the old ones.
@@ -86,7 +86,7 @@ Test period: **23 September 2025 – 8 September 2026**, 241 sessions.
 | Random Forest | 52.3% |
 | LSTM | 48.1% |
 
-None of these models beats the baseline on this holdout. The LSTM adds a useful comparison, but it does not improve this result. The full confusion matrices, precision, recall and F1 scores are in `metricas_modelo.json` and in the dashboard.
+None of these models beats the baseline on this holdout. The LSTM adds a useful comparison, but it does not improve this result. The full confusion matrices, precision, recall and F1 scores are in `models/metricas_modelo.json` and in the dashboard.
 
 ## API
 
@@ -108,20 +108,17 @@ curl 'http://127.0.0.1:5001/api/predict/AAPL?source=demo&model=random_forest'
 
 Demo data is available only for AAPL. Other tickers use models trained on AAPL and are marked experimental. This project is intended for US stocks quoted in USD.
 
-## Tests
+## Validation
 
-Tests use Python's built-in `unittest`. The API integration tests use a real, separate PostgreSQL database; Yahoo responses are replaced with the included CSV for repeatability.
+Python and database checks run locally and are deliberately kept out of the public repository. They cover chronological boundaries, indicator leakage, the missing final target, LSTM windows, input validation, caching, database failures and session isolation.
+
+The GitHub workflow only builds the frontend:
 
 ```bash
-# Create a separate test database; adapt credentials for your setup.
-createdb -h 127.0.0.1 -p 5433 -U trendcast trendcast_test
-TEST_DATABASE_URL=postgresql://trendcast:trendcast_local@127.0.0.1:5433/trendcast_test \
-  python -m unittest discover -s tests -v
 cd frontend
+npm ci
 npm run build
 ```
-
-Without `TEST_DATABASE_URL`, the database integration tests are skipped. The checks cover chronological boundaries, indicator leakage, the missing final target, LSTM windows, input validation, caching, database failures and session isolation.
 
 ## Deployment (later)
 
@@ -134,17 +131,24 @@ For any future hosted setup, supply `DATABASE_URL`, keep `SECRET_KEY` private an
 ## Project structure
 
 ```text
-fetch_data.py       Download and visualize AAPL prices
-market.py           Shared indicators, labels and time split
-train_model.py      Evaluate and save the scikit-learn models
-train_lstm.py       Evaluate and save the LSTM
-lstm_model.py       LSTM architecture and inference
-app.py              Flask routes and React serving
-database.py         PostgreSQL queries
-schema.sql          Price cache, predictions and favorites
+backend/            Flask API and PostgreSQL
+  app.py              Routes and React serving
+  database.py         Database queries
+  schema.sql          Tables and indexes
+ml/                 Data preparation and machine learning
+  market.py           Shared indicators, labels and time split
+  fetch_data.py       Download and visualize AAPL prices
+  train_model.py      Evaluate and save scikit-learn models
+  train_lstm.py       Evaluate and save the LSTM
+  lstm_model.py       LSTM architecture and inference
+data/               Included AAPL training CSV
+models/             Trained models and evaluation metrics
 frontend/           React + Vite + Recharts
-tests/              Data, model and API checks
+tests/              Local checks (ignored by Git)
+.github/workflows/  Frontend build
 ```
+
+Run the Python commands from the project root using `python -m`, as shown above.
 
 ## Six-phase roadmap
 
