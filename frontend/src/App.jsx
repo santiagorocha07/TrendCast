@@ -87,8 +87,16 @@ export default function App() {
       setTicker(data.ticker);
       setTab("overview");
       setNotice("");
-      const history = await api("/predictions");
-      if (id === requestId.current) setSaved(history.predictions);
+      setBusy(false);
+      try {
+        const history = await api("/predictions");
+        if (id === requestId.current) setSaved(history.predictions);
+      } catch (e) {
+        if (id === requestId.current)
+          setNotice(
+            `Forecast ready, but saved forecasts could not be refreshed: ${e.message}`,
+          );
+      }
     } catch (e) {
       if (id === requestId.current) setError(e.message);
     } finally {
