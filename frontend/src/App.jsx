@@ -139,12 +139,6 @@ export default function App() {
           <span className="brand-mark">↗</span>TrendCast
           <span className="brand-dot">.</span>
         </a>
-        <div className="workspace">
-          <span className="workspace-icon">TC</span>
-          <div>
-            Market workspace<small>Personal research project</small>
-          </div>
-        </div>
         <p className="nav-label">WORKSPACE</p>
         <nav aria-label="Workspace">
           {[
@@ -191,10 +185,6 @@ export default function App() {
             </p>
           )}
         </div>
-        <div className="sidebar-bottom">
-          <span className="status-dot" /> Built to explore, not to trade.
-          <p>Python · React · PostgreSQL</p>
-        </div>
       </aside>
       <main>
         <header className="topbar">
@@ -206,10 +196,7 @@ export default function App() {
                 ? "Forecasts"
                 : "Overview"}
           </span>
-          <div className="research-badge">
-            <span className="status-dot" /> Research edition{" "}
-            <span className="avatar">S</span>
-          </div>
+          <span className="avatar">S</span>
         </header>
         <div className="content">
           <div className="page-heading">
@@ -308,9 +295,6 @@ export default function App() {
                     {item}
                   </button>
                 ))}
-                <span className="data-note">
-                  Daily adjusted closes · next-session horizon
-                </span>
               </div>
               {error && (
                 <div className="error" role="alert">
