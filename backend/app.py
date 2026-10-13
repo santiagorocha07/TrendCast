@@ -11,7 +11,7 @@ import psycopg
 from flask import Flask, jsonify, request, session, send_from_directory
 
 from .database import Storage
-from ml.market import ROOT, MODELS, FEATURES, MarketDataError, download_data, history_frame, history_records, load_training_data, validate_ticker
+from ml.market import ROOT, MODELS, FEATURES, MarketDataError, download_data, history_frame, history_records, load_training_data, search_stocks, validate_ticker
 
 MODEL_FILES = {"random_forest": "modelo_trendcast.pkl", "logistic_regression": "modelo_logistic.pkl", "lstm": "modelo_lstm.pt"}
 PERIODS = {"3mo": 63, "6mo": 126, "1y": 252, "2y": 504, "5y": 1260}
@@ -95,6 +95,10 @@ def create_app(config=None):
         info["available_models"] = [name for name, file in MODEL_FILES.items()
                                     if (MODELS / file).exists() and name in info["models"]]
         return jsonify(info)
+
+    @app.get("/api/stocks")
+    def stocks():
+        return jsonify(stocks=search_stocks(request.args.get("query", "")), source="yahoo_finance")
 
     @app.get("/api/history/<ticker>")
     def history(ticker):

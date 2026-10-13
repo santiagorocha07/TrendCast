@@ -23,6 +23,31 @@ def validate_ticker(ticker):
     return ticker
 
 
+def search_stocks(query):
+    query = query.strip()
+    if not 1 <= len(query) <= 80 or not query.isprintable():
+        raise ValueError("Search with a ticker or company name between 1 and 80 characters.")
+    try:
+        result = yf.Search(query, max_results=8, news_count=0, lists_count=0,
+                           recommended=0, include_cb=False, timeout=10)
+        if not isinstance(result.response, dict) or not isinstance(result.response.get("quotes"), list):
+            raise ValueError("Invalid Yahoo Finance search response.")
+    except Exception as exc:
+        raise MarketDataError("Yahoo Finance search is unavailable. Please try again later.") from exc
+    stocks = []
+    for quote in result.quotes:
+        if (not isinstance(quote, dict) or quote.get("quoteType") != "EQUITY"
+                or quote.get("exchange") not in {"NMS", "NGM", "NCM", "NYQ", "ASE", "PCX"}):
+            continue
+        try:
+            ticker = validate_ticker(quote.get("symbol", ""))
+        except (ValueError, AttributeError):
+            continue
+        stocks.append({"ticker": ticker, "name": quote.get("shortname") or quote.get("longname") or ticker,
+                       "exchange": quote.get("exchDisp") or quote.get("exchange")})
+    return stocks[:8]
+
+
 def prepare_data(frame):
     frame = frame.copy()
     if isinstance(frame.columns, pd.MultiIndex):

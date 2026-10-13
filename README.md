@@ -94,6 +94,7 @@ None of these models beats the baseline on this holdout. The LSTM adds a useful 
 | --- | --- | --- |
 | GET | `/api/health` | Check Flask and PostgreSQL |
 | GET | `/api/models` | Metrics and available models |
+| GET | `/api/stocks?query=Microsoft` | Find US stock symbols by ticker or company name |
 | GET | `/api/predict/AAPL` | Forecast plus chart history; save the forecast |
 | GET | `/api/history/AAPL` | Adjusted prices and moving averages |
 | GET | `/api/predictions` | This browser session's last 30 forecasts |
@@ -104,7 +105,11 @@ Prediction parameters: `model=random_forest|logistic_regression|lstm`, `period=3
 
 ```bash
 curl 'http://127.0.0.1:5001/api/predict/AAPL?source=demo&model=random_forest'
+curl 'http://127.0.0.1:5001/api/stocks?query=Microsoft'
+curl 'http://127.0.0.1:5001/api/history/MSFT?period=6mo'
 ```
+
+Stock search uses the existing yfinance connection to Yahoo Finance and returns up to eight equity matches listed on Nasdaq or NYSE venues, with their ticker, name and exchange. ETFs, futures and overseas listings are excluded. Queries must contain 1–80 printable characters after trimming. No matches returns an empty list; an unavailable provider returns HTTP 502. Each search request uses a 10-second provider timeout. There is no extra API key to configure.
 
 Demo data is available only for AAPL. Other tickers use models trained on AAPL and are marked experimental. This project is intended for US stocks quoted in USD.
 
