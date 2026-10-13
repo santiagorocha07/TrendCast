@@ -29,7 +29,7 @@ const date = (value) =>
   });
 
 export default function App() {
-  const [ticker, setTicker] = useState("AAPL");
+  const [ticker, setTicker] = useState("");
   const [model, setModel] = useState("random_forest");
   const [period, setPeriod] = useState("6mo");
   const [source, setSource] = useState("live");
